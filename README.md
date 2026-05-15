@@ -1,95 +1,95 @@
-# Reflective Research Agent (FastAPI + Postgres, single container)
+# 多AI智能体自动写论文系统
 
-A FastAPI web app that plans a research workflow, runs tool-using agents (Tavily, arXiv, Wikipedia), and stores task state/results in Postgres.
-This repo includes a Docker setup that runs **Postgres + the API in one container** (for local/dev).
+基于FastAPI的多AI智能体协作系统，能够自动规划研究流程、执行文献调研、撰写和编辑学术论文。系统使用PostgreSQL存储任务状态和结果，支持Tavily、arXiv、维基百科等研究工具。
+本项目包含Docker配置，可在单个容器中运行**PostgreSQL数据库 + FastAPI应用**（适用于本地开发和测试）。
 
-## Features
+## 功能特性
 
-* `/` serves a simple UI (Jinja2 template) to kick off a research task.
-* `/generate_report` kicks off a threaded, multi-step agent workflow (planner → research/writer/editor).
-* `/task_progress/{task_id}` live status for each step/substep.
-* `/task_status/{task_id}` final status + report.
+* `/` - 提供简洁的用户界面（Jinja2模板）来启动论文写作任务
+* `/generate_report` - 启动多线程AI智能体协作流程（规划器→研究员/撰写员/编辑员）
+* `/task_progress/{task_id}` - 实时查看每个步骤/子步骤的执行状态
+* `/task_status/{task_id}` - 获取最终状态和完整的论文报告
 
 ---
 
-## Project layout (key paths)
+## 项目结构
 
 ```
 .
-├─ main.py                      # FastAPI app (your file shown above)
+├─ main.py                      # FastAPI主应用入口
 ├─ src/
-│  ├─ planning_agent.py         # planner_agent(), executor_agent_step()
-│  ├─ agents.py                 # research_agent, writer_agent, editor_agent  (example)
-│  └─ research_tools.py         # tavily_search_tool, arxiv_search_tool, wikipedia_search_tool
+│  ├─ planning_agent.py         # 规划智能体：planner_agent(), executor_agent_step()
+│  ├─ agents.py                 # 研究智能体：research_agent, writer_agent, editor_agent
+│  └─ research_tools.py         # 研究工具：tavily_search_tool, arxiv_search_tool, wikipedia_search_tool
 ├─ templates/
-│  └─ index.html                # UI page rendered by "/"
-├─ static/                      # optional static assets (css/js)
+│  └─ index.html                # 用户界面页面
+├─ static/                      # 静态资源文件（CSS/JS）
 ├─ docker/
-│  └─ entrypoint.sh             # starts Postgres, prepares DB, then launches Uvicorn
-├─ requirements.txt
-├─ Dockerfile
-└─ README.md
+│  └─ entrypoint.sh             # 启动脚本：启动Postgres，准备数据库，然后启动Uvicorn
+├─ requirements.txt             # Python依赖包
+├─ Dockerfile                   # Docker配置文件
+└─ README.md                    # 项目说明文档
 ```
 
-> Make sure `templates/index.html` and (optionally) `static/` exist and are copied into the image.
+> 确保 `templates/index.html` 和（可选）`static/` 目录存在并被复制到Docker镜像中。
 
 ---
 
-## Prerequisites
+## 环境要求
 
-* **Docker** (Desktop on Windows/macOS, or engine on Linux).
+* **Docker**（Windows/macOS上的Docker Desktop，或Linux上的Docker引擎）
 
-
-* API keys stored in a `.env` file:
+* 在 `.env` 文件中配置API密钥：
 
   ```
-  OPENAI_API_KEY=your-open-api-key
-  TAVILY_API_KEY=your-tavily-api-key
+  OPENAI_API_KEY=你的OpenAI-API密钥
+  TAVILY_API_KEY=你的Tavily-API密钥
   ```
 
-* Python deps are installed by Docker from `requirements.txt`:
+* Python依赖包（Docker会自动从 `requirements.txt` 安装）：
 
-  * `fastapi`, `uvicorn`, `sqlalchemy`, `python-dotenv`, `jinja2`, `requests`, `wikipedia`, etc.
-  * Plus any libs used by your `aisuite` client.
+  * `fastapi`, `uvicorn`, `sqlalchemy`, `python-dotenv`, `jinja2`, `requests`, `wikipedia` 等
+  * 以及 `aisuite` 客户端所需的其他库
 
 ---
 
-## Environment variables
+## 环境变量
 
-The app **reads only `DATABASE_URL`** at startup.
+应用启动时**只读取 `DATABASE_URL`**。
 
-* The container’s entrypoint sets a sane default for local dev:
+* 容器入口点为本地开发设置了合理的默认值：
 
   ```
   postgresql://app:local@127.0.0.1:5432/appdb
   ```
-* To use Tavily:
 
-  * Provide `TAVILY_API_KEY` (via `.env` or `-e`).
+* 使用Tavily搜索：
 
-Optional (if you want to override defaults done by the entrypoint):
+  * 通过 `.env` 文件或 `-e` 参数提供 `TAVILY_API_KEY`
 
-* `POSTGRES_USER` (default `app`)
-* `POSTGRES_PASSWORD` (default `local`)
-* `POSTGRES_DB` (default `appdb`)
+可选参数（用于覆盖入口点的默认设置）：
+
+* `POSTGRES_USER`（默认值：`app`）
+* `POSTGRES_PASSWORD`（默认值：`local`）
+* `POSTGRES_DB`（默认值：`appdb`）
 
 ---
 
-## Build & Run (local/dev)
+## 构建和运行（本地开发）
 
-### 1) Build
-
-```bash
-docker build -t fastapi-postgres-service .
-```
-
-### 2) Run (foreground)
+### 1) 构建Docker镜像
 
 ```bash
-docker run --rm -it  -p 8000:8000  -p 5432:5432  --name fpsvc  --env-file .env  fastapi-postgres-service
+docker build -t ai-paper-writer .
 ```
 
-You should see logs like:
+### 2) 运行容器（前台模式）
+
+```bash
+docker run --rm -it  -p 8000:8000  -p 5432:5432  --name ai-paper  --env-file .env  ai-paper-writer
+```
+
+你应该看到类似以下的日志：
 
 ```
 🚀 Starting Postgres cluster 17/main...
@@ -100,105 +100,105 @@ CREATE DATABASE
 INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
 
-### 3) Open the app
+### 3) 访问应用
 
-* UI: [http://localhost:8000/](http://localhost:8000/)
-* Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+* 用户界面：[http://localhost:8000/](http://localhost:8000/)
+* API文档：[http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## API quickstart
+## API快速开始
 
-### Kick off a run
+### 启动论文写作任务
 
 ```bash
 curl -X POST http://localhost:8000/generate_report \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Large Language Models for scientific discovery", "model":"openai:gpt-4o"}'
-# -> {"task_id": "UUID..."}
+  -d '{"prompt": "人工智能在科学研究中的应用", "model":"openai:gpt-4o"}'
+# 返回: {"task_id": "UUID..."}
 ```
 
-### Poll progress
+### 查看任务进度
 
 ```bash
-curl http://localhost:8000/task_progress/<TASK_ID>
+curl http://localhost:8000/task_progress/<任务ID>
 ```
 
-### Final status + report
+### 获取最终状态和论文
 
 ```bash
-curl http://localhost:8000/task_status/<TASK_ID>
+curl http://localhost:8000/task_status/<任务ID>
 ```
 
 ---
 
-## Troubleshooting
+## 故障排除
 
-**I open [http://localhost:8000](http://localhost:8000) and see nothing / errors**
+**打开 [http://localhost:8000](http://localhost:8000) 时看不到内容或出现错误**
 
-* Confirm `templates/index.html` exists inside the container:
-
-  ```bash
-  docker exec -it fpsvc bash -lc "ls -l /app/templates && ls -l /app/static || true"
-  ```
-* Watch logs while you load the page:
+* 确认容器内存在 `templates/index.html`：
 
   ```bash
-  docker logs -f fpsvc
+  docker exec -it ai-paper bash -lc "ls -l /app/templates && ls -l /app/static || true"
+  ```
+* 加载页面时查看日志：
+
+  ```bash
+  docker logs -f ai-paper
   ```
 
-**Container asks for a Postgres password on startup**
+**容器启动时要求Postgres密码**
 
-* The entrypoint uses **UNIX socket + peer auth** for admin tasks (no password).
-  Ensure you’re not calling `psql -h 127.0.0.1 -U postgres` in the script—use:
+* 入口点使用 **UNIX socket + peer认证** 进行管理员任务（无需密码）
+  确保没有在脚本中调用 `psql -h 127.0.0.1 -U postgres`，而应使用：
 
   ```bash
   su -s /bin/bash postgres -c "psql -c '...'"
   ```
 
-**`DATABASE_URL not set` error**
+**`DATABASE_URL not set` 错误**
 
-* The entrypoint exports a default DSN. If you overrode it, ensure it’s valid:
+* 入口点会导出默认的DSN。如果覆盖了它，请确保它是有效的：
 
   ```
-  postgresql://<user>:<password>@<host>:<port>/<database>
+  postgresql://<用户名>:<密码>@<主机>:<端口>/<数据库名>
   ```
 
-**Tables disappear on restart**
+**重启后表消失**
 
-* In your `main.py` you call `Base.metadata.drop_all(...)` on startup.
-  Comment it out or guard with an env flag:
+* 在 `main.py` 中，启动时会调用 `Base.metadata.drop_all(...)`
+  注释掉或添加环境变量保护：
 
   ```python
   if os.getenv("RESET_DB_ON_STARTUP") == "1":
       Base.metadata.drop_all(bind=engine)
   ```
 
-**Tavily / arXiv / Wikipedia errors**
+**Tavily / arXiv / Wikipedia 错误**
 
-* Provide `TAVILY_API_KEY` and ensure network access, provide in the root dir and `.env` file as follows:
+* 提供 `TAVILY_API_KEY` 并确保网络访问正常，在根目录的 `.env` 文件中配置：
 ```
-# OpenAI API Key
-OPENAI_API_KEY=your-open-api-key
-TAVILY_API_KEY=your-tavily-api-key
+# OpenAI API密钥
+OPENAI_API_KEY=你的OpenAI-API密钥
+TAVILY_API_KEY=你的Tavily-API密钥
 ```
 
-* Wikipedia rate limits sometimes; try later or handle exceptions gracefully.
+* Wikipedia有时会有速率限制；可以稍后重试或优雅地处理异常
 
 ---
 
-## Development tips
+## 开发提示
 
-* **Hot reload** (optional): For dev, you can run Uvicorn with `--reload` if you mount your code:
+* **热重载**（可选）：开发时，如果挂载代码可以运行带 `--reload` 的Uvicorn：
 
   ```bash
   docker run --rm -it -p 8000:8000 -p 5432:5432 \
     -v "$PWD":/app \
-    --name fpsvc fastapi-postgres-service \
+    --name ai-paper ai-paper-writer \
     bash -lc "pg_ctlcluster \$(psql -V | awk '{print \$3}' | cut -d. -f1) main start && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
   ```
 
-* **Connect to DB from host:**
+* **从主机连接数据库：**
 
   ```bash
   psql "postgresql://app:local@localhost:5432/appdb"
