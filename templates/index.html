@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reflective Research Agents with Tools Use</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { display: flex; font-family: system-ui, -apple-system, sans-serif; }
+
+    /* === Sidebar === */
+    #sidebar {
+      width: 320px; min-width: 320px; height: 100vh;
+      background: #f8f9fa; border-right: 1px solid #dee2e6;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #sidebar .sidebar-header {
+      padding: 14px 16px; border-bottom: 1px solid #dee2e6;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #sidebar .sidebar-header h5 { margin: 0; font-size: 1rem; font-weight: 700; }
+    #historyList {
+      flex: 1; overflow-y: auto; padding: 8px 0;
+    }
+    .history-item {
+      padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #eee;
+      transition: background 0.15s;
+    }
+    .history-item:hover { background: #e9ecef; }
+    .history-item.active { background: #cfe2ff; border-left: 3px solid #0d6efd; padding-left: 13px; }
+    .history-item .hi-prompt {
+      font-size: 0.875rem; font-weight: 500; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
+    }
+    .history-item .hi-meta {
+      font-size: 0.75rem; color: #6c757d; display: flex; align-items: center; gap: 6px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+    }
+    .status-dot.done { background: #198754; }
+    .status-dot.running { background: #ffc107; }
+    .status-dot.error { background: #dc3545; }
+    .status-dot.pending { background: #adb5bd; }
+
+    #sidebarToggle { display: none; position: absolute; top: 10px; left: 10px; z-index: 1050; }
+
+    /* === Main === */
+    #mainContent {
+      flex: 1; overflow-y: auto; height: 100vh; padding: 24px 32px;
+    }
+
+    /* === Step styles === */
+    .step-header { cursor: pointer; }
+    .step-running { background-color: #fff3cd; }
+    .step-done { background-color: #d1e7dd; }
+    .step-error { background-color: #f8d7da; }
+    .step-pending { background-color: #e2e3e5; }
+    .substep { font-size: 0.95em; margin-left: 1.5rem; }
+    .substep-header { cursor: pointer; font-weight: bold; }
+    .status-icon { margin-right: 0.5rem; }
+    #stepStatusList div { margin-bottom: 0.25rem; }
+    #finalReport { background-color: #fff; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; }
+
+    /* === Responsive === */
+    @media (max-width: 768px) {
+      #sidebar { position: fixed; left: -320px; top: 0; z-index: 1040; transition: left 0.3s; }
+      #sidebar.open { left: 0; }
+      #sidebarToggle { display: inline-block; }
+      #mainContent { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mobile sidebar toggle -->
+<button id="sidebarToggle" class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">☰</button>
+
+<!-- === LEFT SIDEBAR === -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <h5>📋 历史报告</h5>
+    <button class="btn btn-outline-secondary btn-sm" onclick="loadHistory()" title="刷新列表">🔄</button>
+  </div>
+  <div id="historyList">
+    <div class="text-muted text-center mt-4" id="historyEmpty">暂无历史报告</div>
+  </div>
+</div>
+
+<!-- === MAIN CONTENT === -->
+<div id="mainContent">
+
+  <h2 class="mb-4">🧠 Reflective Research Agent — Planning and Tool Use</h2>
+
+<!-- Intro Card -->
+<div class="card mb-3 shadow-sm border-0">
+  <div class="card-body">
+    <p class="mb-3">
+      <strong>In this item,</strong> you can try the <em>research agent</em> that Andrew walked through earlier in the module for yourself.
+    </p>
+
+    <p class="mb-3">
+      To use the agent, enter a prompt in the box below. Research agents work best when you give some details in your prompt to guide their work.
+      Try adding <strong>3–4 details</strong> that provide more context about your research question.
+      You don't have to write much—just a few sentences will be enough.
+    </p>
+
+    <p class="mb-3">
+      To see what the agent is doing in the background, expand the box associated with each step of the workflow by clicking on the
+      <strong>➕</strong> sign next to the agent call.
+      This will reveal the behind-the-scenes working of the agent for that step.
+    </p>
+
+    <p class="mb-3">
+      This agent is powered by <strong>qwen-plus</strong> and <strong>qwen-turbo</strong>, two lower-cost
+      openAI models that are not as powerful as the latest OpenAI, Anthropic, or Gemini models.
+      Keep this in mind as you try your prompts—your mileage may vary depending on your question!
+    </p>
+
+    <hr class="my-4">
+
+    <p class="mb-3">
+      In the graded labs in <strong>Modules 2, 3, and 5</strong>, you'll gradually build out the back-end of your research agent,
+      adding new functionality step-by-step as you progress through the course.
+    </p>
+
+    <p class="mb-0">
+    To make it easier for you to try out, we've included a web-based front end in this activity. The labs, however, will focus on building only the back-end functionality of the research agent.
+      <br><br>
+      The generated report includes clickable links in the references section. To access these, right click and open the link in a new tab or window.
+      <br><br>
+      You can find all the code for the web-based agent on GitHub:
+      <a href="https://github.com/https-deeplearning-ai/agentic-ai-public" target="_blank" class="link-primary fw-semibold">
+        agentic-ai-public
+      </a>
+    </p>
+  </div>
+</div>
+
+  <!-- Prompt area -->
+  <div class="mb-3">
+    <label for="promptInput" class="form-label">Prompt</label>
+    <div class="d-flex align-items-start gap-2 flex-wrap">
+      <textarea
+        class="form-control"
+        id="promptInput"
+        rows="4"
+        placeholder="Describe your research topic here"
+        style="flex: 1 1 300px; min-width: 0;"
+      ></textarea>
+      <div class="d-flex flex-column gap-2" style="flex-shrink: 0;">
+        <select id="modelSelect" class="form-select" style="width: auto; min-width: 160px;">
+          <option value="qwen-turbo">qwen-turbo (快速)</option>
+          <option value="qwen-plus">qwen-plus (均衡)</option>
+          <option value="qwen-max">qwen-max (高质量)</option>
+        </select>
+        <button class="btn btn-primary" onclick="submitPrompt()">Submit</button>
+      </div>
+    </div>
+    <div class="form-text">Tip: Add 3–4 details to make your question more specific.</div>
+  </div>
+
+  <div id="taskInfo" class="mb-3"></div>
+  <div id="stepStatusList" class="mb-4"></div>
+  <div id="stepDetails"></div>
+  <div id="finalOutput" class="mt-4"></div>
+</div>
+
+<script>
+let currentTaskId = null;
+let currentTopic = null;
+let pollInterval = null;
+let finalReportMarkdown = "";
+const renderedSteps = new Map();
+
+// === Sidebar toggle ===
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// === Load history ===
+function loadHistory() {
+  fetch('/tasks')
+    .then(res => res.json())
+    .then(tasks => {
+      const list = document.getElementById('historyList');
+      if (!tasks || tasks.length === 0) {
+        list.innerHTML = '<div class="text-muted text-center mt-4">暂无历史报告</div>';
+        return;
+      }
+      list.innerHTML = tasks.map(t => {
+        const date = new Date(t.created_at).toLocaleString();
+        const statusLabel = { done: '完成', running: '运行中', error: '错误' }[t.status] || t.status;
+        return `
+          <div class="history-item" data-id="${t.id}" onclick="loadHistoryItem('${t.id}')">
+            <div class="hi-prompt">${escapeHtml(t.prompt)}</div>
+            <div class="hi-meta">
+              <span class="status-dot ${t.status}"></span>
+              <span>${statusLabel}</span>
+              <span>${date}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    })
+    .catch(() => {});
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// === Load a history item ===
+function loadHistoryItem(taskId) {
+  // highlight active item
+  document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+  const item = document.querySelector(`.history-item[data-id="${taskId}"]`);
+  if (item) item.classList.add('active');
+
+  // stop any running poll
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+
+  fetch(`/task/${taskId}`)
+    .then(res => res.json())
+    .then(task => {
+      document.getElementById('taskInfo').innerHTML = `
+        <h5>📄 查看历史报告: <code>${escapeHtml(task.prompt)}</code></h5>
+      `;
+      document.getElementById('stepStatusList').innerHTML = '';
+      document.getElementById('stepDetails').innerHTML = '';
+      renderedSteps.clear();
+
+      let result = task.result;
+      if (typeof result === 'string') {
+        try { result = JSON.parse(result); } catch(e) { result = null; }
+      }
+
+      if (result && result.history && Array.isArray(result.history)) {
+        result.history.forEach((step, i) => {
+          const icon = step.status === 'done' ? '✅' :
+                       step.status === 'running' ? '⏳' :
+                       step.status === 'error' ? '❌' : '🕓';
+          const row = document.createElement('div');
+          row.className = `step-header ${getStatusTextClass(step.status)}`;
+          row.innerHTML = `${icon} ${step.title}`;
+          document.getElementById('stepStatusList').appendChild(row);
+        });
+      }
+
+      if (result && result.html_report) {
+        finalReportMarkdown = result.html_report;
+        document.getElementById('finalOutput').innerHTML = `
+          <h4>📄 Final Report</h4>
+          <div class="mb-2">
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="downloadMarkdown()">⬇️ Download .md</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="downloadHTML()">⬇️ Download .html</button>
+          </div>
+          <div id="finalReport">${marked.parse(finalReportMarkdown)}</div>
+        `;
+      } else {
+        document.getElementById('finalOutput').innerHTML = '';
+      }
+    })
+    .catch(() => {});
+}
+
+function setTaskInfoGenerating(topic){
+  document.getElementById('taskInfo').innerHTML = `
+    <h5 class="d-flex align-items-center">
+      <span class="me-2">⚙️ Generating steps for the search: <code>${escapeHtml(topic)}</code></span>
+      <span id="stepsIcon"><span class='spinner-border spinner-border-sm text-primary'></span></span>
+    </h5>
+  `;
+}
+
+function setStepsGenerated(){
+  const stepsIcon = document.getElementById('stepsIcon');
+  if (stepsIcon) stepsIcon.textContent = '✅';
+}
+
+function disableUI(disabled){
+  const btn = document.querySelector('button.btn.btn-primary');
+  const input = document.getElementById('promptInput');
+  const sel = document.getElementById('modelSelect');
+  if (btn) btn.disabled = disabled;
+  if (input) input.disabled = disabled;
+  if (sel) sel.disabled = disabled;
+}
+
+function submitPrompt() {
+  const prompt = document.getElementById('promptInput').value;
+  if (!prompt) return;
+
+  const model = document.getElementById('modelSelect').value;
+
+  currentTopic = prompt;
+  setTaskInfoGenerating(currentTopic);
+  disableUI(true);
+
+  fetch('/generate_report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, model })
+  })
+  .then(res => res.json())
+  .then(data => {
+    currentTaskId = data.task_id;
+
+    document.getElementById('stepStatusList').innerHTML = '';
+    document.getElementById('stepDetails').innerHTML = '';
+    document.getElementById('finalOutput').innerHTML = '';
+    renderedSteps.clear();
+
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(fetchProgress, 2000);
+  })
+  .catch(() => {
+    const statusIcon = document.getElementById('statusIcon');
+    if (statusIcon) statusIcon.textContent = '❌';
+    disableUI(false);
+  });
+}
+
+function fetchProgress() {
+  if (!currentTaskId) return;
+
+  fetch(`/task_progress/${currentTaskId}`)
+    .then(res => res.json())
+    .then(data => {
+      const { steps } = data;
+
+      if (Array.isArray(steps) && steps.length > 0) {
+        setStepsGenerated();
+      }
+
+      steps.forEach((step, index) => {
+        const stepKey = `${step.title}-${step.status}-${step.substeps.length}`;
+        if (renderedSteps.get(index) === stepKey) return;
+
+        renderedSteps.set(index, stepKey);
+
+        const icon = step.status === 'done' ? '✅' :
+                     step.status === 'running' ? '<span class="spinner-border spinner-border-sm text-warning"></span>' :
+                     step.status === 'error' ? '❌' : '🕓';
+
+        const rowId = `step-row-${index}`;
+        let row = document.getElementById(rowId);
+        if (!row) {
+          row = document.createElement('div');
+          row.id = rowId;
+          row.className = `step-header ${getStatusClass(step.status)}`;
+          row.innerHTML = `${icon} ${step.title}`;
+          document.getElementById('stepStatusList').appendChild(row);
+        } else {
+          row.className = `step-header ${getStatusClass(step.status)}`;
+          row.innerHTML = `${icon} ${step.title}`;
+        }
+
+        const cardId = `step-card-${index}`;
+        let card = document.getElementById(cardId);
+        const substepsHTML = step.substeps.map((sub, j) => `
+          <div class="substep">
+            <div class="substep-header" data-bs-toggle="collapse" data-bs-target="#substep-${index}-${j}" aria-expanded="false" aria-controls="substep-${index}-${j}">
+              ➕ ${sub.title}
+            </div>
+            <div id="substep-${index}-${j}" class="collapse">
+              <div class="bg-light p-2 rounded" style="white-space:pre-wrap;">${marked.parse(sub.content)}</div>
+            </div>
+          </div>
+        `).join('');
+
+        if (!card) {
+          card = document.createElement('div');
+          card.id = cardId;
+          card.className = `card mb-3 ${getStepClass(step.status)}`;
+          card.innerHTML = `
+            <div class="card-header">${step.title} — ${step.status.toUpperCase()}</div>
+            <div class="card-body">
+              <p>${step.description}</p>
+              ${substepsHTML}
+            </div>
+          `;
+          document.getElementById('stepDetails').appendChild(card);
+        } else {
+          card.className = `card mb-3 ${getStepClass(step.status)}`;
+          card.querySelector('.card-header').textContent = `${step.title} — ${step.status.toUpperCase()}`;
+          card.querySelector('.card-body').innerHTML = `
+            <p>${step.description}</p>
+            ${substepsHTML}
+          `;
+        }
+      });
+
+      fetchTaskStatus();
+    })
+    .catch(() => {
+      // silent
+    });
+}
+
+function fetchTaskStatus() {
+  fetch(`/task_status/${currentTaskId}`)
+    .then(res => res.json())
+    .then(task => {
+      const statusIcon = document.getElementById('statusIcon');
+
+      if (task.status === 'done') {
+        if (statusIcon) statusIcon.textContent = '✅';
+        clearInterval(pollInterval);
+        disableUI(false);
+        loadHistory();  // refresh sidebar after completion
+      } else if (task.status === 'error') {
+        if (statusIcon) statusIcon.textContent = '❌';
+        clearInterval(pollInterval);
+        disableUI(false);
+        loadHistory();  // refresh sidebar after error
+      }
+
+      if (typeof task.result === 'string') {
+        try { task.result = JSON.parse(task.result); } catch { return; }
+      }
+
+      if (task.status === 'done' && task.result?.html_report) {
+        finalReportMarkdown = task.result.html_report;
+        document.getElementById('finalOutput').innerHTML = `
+          <h4>📄 Final Report</h4>
+          <div class="mb-2">
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="downloadMarkdown()">⬇️ Download .md</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="downloadHTML()">⬇️ Download .html</button>
+          </div>
+          <div id="finalReport">${marked.parse(finalReportMarkdown)}</div>
+        `;
+      }
+    });
+}
+
+function getStatusClass(status) {
+  return status === 'done' ? 'text-success' :
+         status === 'running' ? 'text-warning' :
+         status === 'error' ? 'text-danger' : 'text-muted';
+}
+
+function getStatusTextClass(status) {
+  return status === 'done' ? 'step-done' :
+         status === 'running' ? 'step-running' :
+         status === 'error' ? 'step-error' : 'step-pending';
+}
+
+function getStepClass(status) {
+  return status === 'done' ? 'step-done' :
+         status === 'running' ? 'step-running' :
+         status === 'error' ? 'step-error' : 'step-pending';
+}
+
+function downloadMarkdown() {
+  const blob = new Blob([finalReportMarkdown], { type: 'text/markdown' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `final_report_${currentTaskId || 'saved'}.md`;
+  link.click();
+}
+
+function downloadHTML() {
+  const htmlContent = marked.parse(finalReportMarkdown);
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `final_report_${currentTaskId || 'saved'}.html`;
+  link.click();
+}
+
+// Load history on startup
+loadHistory();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
