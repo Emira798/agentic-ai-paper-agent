@@ -36,8 +36,8 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/ai-paper-writer:${{ steps.get_version.outputs.VERSION }}
-          ghcr.io/${{ github.repository_owner }}/ai-paper-writer:latest
+          ghcr.io/${{ github.repository_owner,, }}/ai-paper-writer:${{ steps.get_version.outputs.VERSION }}
+          ghcr.io/${{ github.repository_owner,, }}/ai-paper-writer:latest
         labels: |
           org.opencontainers.image.version=${{ steps.get_version.outputs.VERSION }}
         cache-from: type=gha
