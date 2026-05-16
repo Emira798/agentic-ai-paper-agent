@@ -35,6 +35,18 @@
 
 ---
 
+## 🚀 CI/CD 配置
+
+本项目已配置完整的CI/CD流水线，支持自动测试、构建和部署。详细配置说明请查看 [README_CICD.md](README_CICD.md)。
+
+### 自动功能
+- ✅ 代码语法检查
+- ✅ 自动Docker镜像构建
+- ✅ GitHub Container Registry推送
+- ✅ 生产环境部署
+
+---
+
 ## 环境要求
 
 * **Docker**（Windows/macOS上的Docker Desktop，或Linux上的Docker引擎）

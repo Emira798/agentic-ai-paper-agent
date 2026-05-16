@@ -20,3 +20,6 @@ python-dotenv
 
 # SQLite via SQLAlchemy
 SQLAlchemy
+
+# Testing dependencies
+pytest>=7.0.0
