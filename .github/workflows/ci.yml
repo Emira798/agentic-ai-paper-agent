@@ -44,9 +44,9 @@ jobs:
 
     - name: Set up environment variables
       run: |
-        echo "DASHSCOPE_API_KEY=sk-ec8bfcaf4ef8445294f1b2810b3370c4" >> $GITHUB_ENV
         echo "DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1" >> $GITHUB_ENV
-        echo "TAVILY_API_KEY=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" >> $GITHUB_ENV
+        echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" >> $GITHUB_ENV
+        echo "TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}" >> $GITHUB_ENV
 
     - name: Run code quality checks
       run: |
