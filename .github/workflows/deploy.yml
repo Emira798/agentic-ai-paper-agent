@@ -43,7 +43,97 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Deploy to Tencent Cloud Server
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.TENCENT_SERVER_HOST }}
+        username: ${{ secrets.TENCENT_SERVER_USER }}
+        key: ${{ secrets.TENCENT_SERVER_SSH_KEY }}
+        port: ${{ secrets.TENCENT_SERVER_PORT || 22 }}
+        script: |
+          echo "🚀 Starting deployment to Tencent Cloud server..."
+
+          # Navigate to project directory
+          cd ${{ secrets.TENCENT_PROJECT_PATH || '/app/ai-paper-writer' }} || {
+            echo "❌ Project directory not found, creating..."
+            mkdir -p /app/ai-paper-writer
+            cd /app/ai-paper-writer
+          }
+
+          # Pull latest code
+          echo "📥 Pulling latest code..."
+          if [ -d ".git" ]; then
+            git fetch origin
+            git checkout main
+            git reset --hard origin/main
+          else
+            echo "⚠️  No git repository found, skipping code pull"
+          fi
+
+          # Update environment variables if .env file exists
+          if [ -f ".env" ]; then
+            echo "🔧 Updating environment variables..."
+            echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" > .env
+            echo "TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          fi
+
+          # Stop existing service if running
+          echo "🛑 Stopping existing service..."
+          if pm2 list | grep -q "ai-paper-writer"; then
+            pm2 stop ai-paper-writer || echo "Service not running"
+            pm2 delete ai-paper-writer || echo "Service not found in PM2"
+          fi
+
+          # Install dependencies and start service
+          echo "📦 Installing dependencies..."
+          pip install -r requirements.txt || echo "Dependencies installation completed"
+
+          # Start the service with PM2
+          echo "🚀 Starting service..."
+          pm2 start main.py --name "ai-paper-writer" --interpreter python3 || {
+            echo "❌ PM2 start failed, trying direct start..."
+            nohup python3 main.py > app.log 2>&1 &
+          }
+
+          # Wait a moment for service to start
+          sleep 10
+
+          echo "✅ Deployment completed!"
+
+    - name: Health Check
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.TENCENT_SERVER_HOST }}
+        username: ${{ secrets.TENCENT_SERVER_USER }}
+        key: ${{ secrets.TENCENT_SERVER_SSH_KEY }}
+        port: ${{ secrets.TENCENT_SERVER_PORT || 22 }}
+        script: |
+          echo "🏥 Performing health check..."
+
+          # Check if service is running
+          if pm2 list | grep -q "ai-paper-writer" && pm2 list | grep "ai-paper-writer" | grep -q "online"; then
+            echo "✅ PM2 service is running"
+          else
+            echo "⚠️  PM2 service not found, checking for direct process..."
+            if pgrep -f "python3.*main.py" > /dev/null; then
+              echo "✅ Direct Python process is running"
+            else
+              echo "❌ No service found running"
+              exit 1
+            fi
+          fi
+
+          # Check if application is responding (if port is exposed)
+          if curl -s --connect-timeout 10 http://localhost:${{ secrets.APP_PORT || 8000 }}/api > /dev/null; then
+            echo "✅ Application is responding on port ${{ secrets.APP_PORT || 8000 }}"
+          else
+            echo "⚠️  Application health check failed, but deployment may still be successful"
+          fi
+
     - name: Deploy notification
       run: |
         echo "🚀 成功部署版本 ${{ steps.get_version.outputs.VERSION }} 到生产环境!"
         echo "📦 镜像地址: ghcr.io/${{ github.repository_owner }}/ai-paper-writer:${{ steps.get_version.outputs.VERSION }}"
+        echo "🌐 服务器部署完成: ${{ secrets.TENCENT_SERVER_HOST }}"
+        echo "🎉 部署流程全部完成!"

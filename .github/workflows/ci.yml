@@ -1,4 +1,4 @@
-name: CI Simple
+name: CI Enhanced
 
 on:
   push:
@@ -40,6 +40,19 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install pytest-cov flake8 pytest-mock
+
+    - name: Set up environment variables
+      run: |
+        echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY || 'test_key' }}" >> $GITHUB_ENV
+        echo "TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY || 'test_key' }}" >> $GITHUB_ENV
+        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY || 'test_key' }}" >> $GITHUB_ENV
+
+    - name: Run code quality checks
+      run: |
+        echo "Running flake8 code quality checks..."
+        python -m flake8 src/ tests/ main.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        python -m flake8 src/ tests/ main.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Run basic syntax check
       run: |
@@ -55,18 +68,23 @@ jobs:
 
         echo "语法检查完成"
 
-    - name: Run tests (if any)
+    - name: Run comprehensive tests with coverage
       run: |
-        # 如果有测试文件，这里可以运行
-        if [ -d "tests" ]; then
-          echo "运行基础测试..."
-          python -m pytest tests/ -v --tb=short || echo "测试完成（可能有预期中的导入错误）"
-        else
-          echo "No tests directory found, skipping tests"
-        fi
+        echo "Running comprehensive test suite..."
+        python -m pytest tests/ -v --tb=short --cov=src --cov=main --cov-report=xml --cov-report=html --cov-fail-under=70
       env:
         PYTHONPATH: ${{ github.workspace }}
         DATABASE_URL: postgresql://app:local@localhost:5432/appdb
+        DASHSCOPE_API_KEY: ${{ env.DASHSCOPE_API_KEY }}
+        TAVILY_API_KEY: ${{ env.TAVILY_API_KEY }}
+        OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
 
   build:
     runs-on: ubuntu-latest

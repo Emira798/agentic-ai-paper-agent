@@ -23,3 +23,7 @@ SQLAlchemy
 
 # Testing dependencies
 pytest>=7.0.0
+pytest-cov
+flake8
+pytest-mock
+requests-mock
